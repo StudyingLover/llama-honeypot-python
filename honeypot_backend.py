@@ -2,12 +2,16 @@ from crypt import methods
 import openai
 import myopenaiapikey
 import json
-from flask import Flask
+from flask import Flask, request
 
 openai.api_base = myopenaiapikey.base
 openai.api_key = myopenaiapikey.api
 
 app = Flask(__name__)
+
+from SparkAPI import get_Spark_response
+
+prompt_template = "你要成为一台Linux终端，我来输入命令，你来显示运行结果.第一条指令是："
 
 def ai_run_command(query):
     response = openai.ChatCompletion.create(
@@ -19,16 +23,20 @@ def ai_run_command(query):
                         """},
             {"role": "user", "content": query}],
     )
-    message = response["choices"][0]["message"]
+    message = response["choices"][0]["message"]["content"]
     return message
 
 
 
-@app.route('/admin/<cmd>',methods=['GET','POST'])
-def hello_admin(cmd):
-    message = ai_run_command(cmd)
-    return {"message":message["content"]}
-    #return render_template
+@app.route('/admin',methods=['GET','POST'])
+def hello_admin():
+    cmd = request.json['cmd']
+    try:
+        message = ai_run_command(cmd)
+    except:
+        message = "Permission denied"
+    return {"message":message}
+
 if __name__ == '__main__':
 
     app.run('0.0.0.0',9000,debug=True)
